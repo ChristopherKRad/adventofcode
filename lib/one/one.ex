@@ -13,8 +13,7 @@ defmodule One do
   def calibrate(list) do
     list
     |> Enum.map(&extract_ints/1)
-
-    # |> Enum.sum()
+    |> Enum.sum()
   end
 
   defp extract_ints(string) do
@@ -28,9 +27,9 @@ defmodule One do
         String.to_integer(Enum.join(digits) <> Enum.join(digits))
 
       _ ->
-        min_digit = Enum.min(digits)
-        max_digit = Enum.max(digits)
-        String.to_integer(min_digit <> max_digit)
+        first_digit = Enum.fetch!(digits, 0)
+        last_digit = List.last(digits)
+        String.to_integer(first_digit <> last_digit)
     end
   end
 end
