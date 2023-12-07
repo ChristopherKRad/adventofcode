@@ -1,6 +1,6 @@
 defmodule Adventofcode.Two.One do
   @doc """
-  iex> Adventofcode.Two.One("path/to/two.txt")
+  iex> Adventofcode.Two.One.file_to_value("path/to/two.txt")
   """
 
   def file_to_value(file_path) do
@@ -8,54 +8,52 @@ defmodule Adventofcode.Two.One do
     |> File.stream!()
     |> Enum.map(&String.trim/1)
     |> Enum.filter(&(&1 != ""))
-    # Turn every row into a list
     |> Enum.map(&parse_game/1)
-    |> filter_out_nil()
-    |> sum_game_ids()
+    |> Enum.filter(&valid_game?/1)
+    |> sum_tuples()
   end
 
-  # Take every row and turn it into a tuple with the game's int val, and the game's data
+  # Parse the list of strings into a tuple {game_id, game_data}
   def parse_game(game_list) do
     [game_str, game_data] = String.split(game_list, ": ")
     game_int = String.slice(game_str, 5..-1) |> String.to_integer()
-    game_tuple = {game_int, extract_to_map(game_data)}
-    parse_tuple(game_tuple)
+    {game_int, extract_rounds(game_data)}
   end
 
-  # Take the string in game_data and turn that into a map with rgb as the keys
-  def extract_to_map(game_data) do
+  # Split the game_data into a list of rounds
+  # process the rounds into maps
+  def extract_rounds(game_data) do
     game_data
-    # Split the string at every `,` and `;`
-    |> String.split(~r/[,;]/)
-    # Trim whitespace from each element
+    |> String.split(";")
     |> Enum.map(&String.trim/1)
-    # Create a map with both the color and count & feed the values into the accumulator
+    |> Enum.map(&process_round/1)
+  end
+
+  def process_round(round) do
+    round
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
     |> Enum.reduce(%{"red" => 0, "blue" => 0, "green" => 0}, fn color_count_str, acc ->
-      # Split the color string by space
       [count_str, color] = String.split(color_count_str, " ")
       count = String.to_integer(count_str)
-      # Update the map with the color count added up for each color
       Map.update(acc, color, count, &(&1 + count))
     end)
   end
 
-  def parse_tuple({game_number, color_counts}) do
+  # Check if the game is valid based on the max_counts condition
+  def valid_game?({_game_number, rounds}) do
     max_counts = %{"red" => 12, "green" => 13, "blue" => 14}
 
-    colors_within_limit =
-      Enum.all?(color_counts, fn {color, count} ->
+    Enum.all?(rounds, fn round ->
+      Enum.all?(round, fn {color, count} ->
         max_count = Map.fetch!(max_counts, color)
         count <= max_count
       end)
-
-    if colors_within_limit, do: {game_number, color_counts}, else: nil
+    end)
   end
 
-  def filter_out_nil(game_tuples) do
-    Enum.filter(game_tuples, &(!is_nil(&1)))
-  end
-
-  def sum_game_ids(game_tuples) do
-    Enum.reduce(game_tuples, 0, fn {id, _}, acc -> acc + id end)
+  # Sum the ids of the games to get the result
+  def sum_tuples(tuples) do
+    Enum.reduce(tuples, 0, fn {first_value, _}, acc -> acc + first_value end)
   end
 end
